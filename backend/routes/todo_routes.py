@@ -27,12 +27,13 @@ def create_todo():
         (user_id, title, description)
     )
     mysql.connection.commit()
-
-    name, email = get_user_email_username(user_id)
     cursor.close()
 
+    email, name = get_user_email_username(user_id)
     if email and name:
         send_email(to_email=email, username=name, is_todo=True, todo_title=title)
+    else:
+        print("⚠️ Failed to fetch user info for sending email")
 
     return jsonify({'message': 'Todo created and email sent!'}), 201
 
