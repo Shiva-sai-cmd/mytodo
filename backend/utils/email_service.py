@@ -13,11 +13,11 @@ def send_email(to_email, username, is_todo=False, todo_title=None):
 
         msg = Message(
             subject=subject,
-            sender=current_app.config.get('MAIL_USERNAME'),
+            sender=current_app.config['MAIL_USERNAME'],
             recipients=[to_email]
         )
         msg.body = body
         mail.send(msg)
-        print(f"✅ Email sent successfully to {to_email}")
+        print("✅ Email sent successfully!")
     except Exception as e:
-        print(f"❌ Email sending failed to {to_email}: {str(e)}")
+        print("❌ Email sending failed:", str(e))

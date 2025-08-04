@@ -13,7 +13,6 @@ def test_todo():
 @todo_bp.route('/create', methods=['POST'])
 @jwt_required()
 def create_todo():
-    print("🔹 Request JSON:", request.get_json())
     user_id = get_jwt_identity()
     data = request.get_json()
     title = data.get('title')
@@ -29,12 +28,10 @@ def create_todo():
     )
     mysql.connection.commit()
 
-    cursor.execute("SELECT name, email FROM users WHERE id=%s", (user_id,))
-    user = cursor.fetchone()
+    name, email = get_user_email_username(user_id)
     cursor.close()
 
-    if user:
-        name, email = user
+    if email and name:
         send_email(to_email=email, username=name, is_todo=True, todo_title=title)
 
     return jsonify({'message': 'Todo created and email sent!'}), 201
@@ -49,15 +46,13 @@ def get_all_todos():
     todos = cursor.fetchall()
     cursor.close()
 
-    result = []
-    for row in todos:
-        result.append({
-            'id': row[0],
-            'title': row[1],
-            'description': row[2],
-            'completed': bool(row[3]),
-            'created_at': row[4].strftime("%Y-%m-%d %H:%M:%S")
-        })
+    result = [{
+        'id': row[0],
+        'title': row[1],
+        'description': row[2],
+        'completed': bool(row[3]),
+        'created_at': row[4].strftime("%Y-%m-%d %H:%M:%S")
+    } for row in todos]
 
     return jsonify({'todos': result}), 200
 
