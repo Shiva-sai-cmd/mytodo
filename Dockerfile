@@ -1,26 +1,29 @@
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Install necessary system packages for mysqlclient
+# Install build dependencies and MySQL client dev libraries
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \
     pkg-config \
     build-essential \
+    libssl-dev \
+    libffi-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy backend code to container
+# Copy backend files into the container
 COPY ./backend/ .
 
-# Upgrade pip and install dependencies
+# Upgrade pip
 RUN pip install --upgrade pip
+
+# Install Python dependencies
 RUN pip install -r requirements.txt
 
-# Expose port used by Flask/Gunicorn
+# Expose the port Flask/Gunicorn will run on
 EXPOSE 5000
 
-# Run the app using Gunicorn
+# Run the Flask app with Gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
