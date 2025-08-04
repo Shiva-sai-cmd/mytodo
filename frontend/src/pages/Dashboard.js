@@ -9,6 +9,7 @@ const Dashboard = () => {
   const [newTodo, setNewTodo] = useState({ title: '', description: '' });
   const [editTodo, setEditTodo] = useState(null);
   const [activeTab, setActiveTab] = useState('todos');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
 
   const fetchTodos = async () => {
@@ -70,13 +71,25 @@ const Dashboard = () => {
         </button>
       </div>
 
+      {/* Sidebar Toggle Button */}
+      <div className="sidebar-toggle-container">
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            <span className="d-inline d-md-none">
+              {sidebarCollapsed ? '➡️' : '⬅️'}
+            </span>
+          </button>
+        </div>
       {/* Layout */}
-      <div className="dashboard-wrapper">
+      <div className="dashboard-wrapper d-flex">
         {/* Sidebar */}
-        <div className="sidebar">
+        <div className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <div
             className={`menu-item ${activeTab === 'todos' ? 'active' : ''}`}
             onClick={() => setActiveTab('todos')}
+            title="View Todos"
           >
             📄 View Todos
           </div>
@@ -86,6 +99,7 @@ const Dashboard = () => {
               setEditTodo(null);
               setActiveTab('add');
             }}
+            title="Add Todo"
           >
             ➕ Add Todo
           </div>
@@ -99,7 +113,7 @@ const Dashboard = () => {
               <form onSubmit={handleCreateOrUpdate} className="todo-form">
                 <input
                   type="text"
-                  className="form-control"
+                  className="form-control mb-2"
                   placeholder="Enter title"
                   value={editTodo ? editTodo.title : newTodo.title}
                   onChange={(e) =>
@@ -111,7 +125,7 @@ const Dashboard = () => {
                 />
                 <input
                   type="text"
-                  className="form-control"
+                  className="form-control mb-2"
                   placeholder="Enter description"
                   value={editTodo ? editTodo.description : newTodo.description}
                   onChange={(e) =>
