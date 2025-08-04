@@ -17,22 +17,30 @@ def register():
     if not name or not email or not password:
         return jsonify({'error': 'All fields are required'}), 400
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
 
-    if user:
-        return jsonify({'error': 'User already exists'}), 409
+        if user:
+            cursor.close()
+            return jsonify({'error': 'User already exists'}), 409
 
-    hashed_pw = generate_password_hash(password)
-    cursor.execute("INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
-                   (name, email, hashed_pw))
-    mysql.connection.commit()
-    cursor.close()
+        hashed_pw = generate_password_hash(password)
+        cursor.execute(
+            "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+            (name, email, hashed_pw)
+        )
+        mysql.connection.commit()
+        cursor.close()
 
-    send_email(email, name, is_todo=False)
+        send_email(email, name, is_todo=False)
 
-    return jsonify({'message': 'User registered successfully'}), 201
+        return jsonify({'message': 'User registered successfully'}), 201
+
+    except Exception as e:
+        print("❌ MySQL error during register:", str(e))
+        return jsonify({'error': 'Internal server error during registration'}), 500
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -43,20 +51,24 @@ def login():
     if not email or not password:
         return jsonify({'error': 'Email and password required'}), 400
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
-    cursor.close()
+    try:
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        cursor.close()
 
-    if not user or not check_password_hash(user[3], password):
-        return jsonify({'error': 'Invalid credentials'}), 401
+        if not user or not check_password_hash(user[3], password):
+            return jsonify({'error': 'Invalid credentials'}), 401
 
-    access_token = create_access_token(identity=str(user[0]), expires_delta=datetime.timedelta(days=1))
+        access_token = create_access_token(identity=str(user[0]), expires_delta=datetime.timedelta(days=1))
+        return jsonify({
+            'token': access_token,
+            'user': {'id': user[0], 'name': user[1], 'email': user[2]}
+        })
 
-    return jsonify({
-        'token': access_token,
-        'user': {'id': user[0], 'name': user[1], 'email': user[2]}
-    })
+    except Exception as e:
+        print("❌ MySQL error during login:", str(e))
+        return jsonify({'error': 'Internal server error during login'}), 500
 
 @auth_bp.route('/google-login', methods=['POST'])
 def google_login():
@@ -67,25 +79,30 @@ def google_login():
     if not email or not name:
         return jsonify({'error': 'Email and name are required'}), 400
 
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
-
-    if not user:
-        cursor.execute(
-            "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
-            (name, email, '')
-        )
-        mysql.connection.commit()
+    try:
+        cursor = mysql.connection.cursor()
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
 
-        send_email(email, name, is_todo=False)
+        if not user:
+            cursor.execute(
+                "INSERT INTO users (name, email, password) VALUES (%s, %s, %s)",
+                (name, email, '')
+            )
+            mysql.connection.commit()
+            cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
 
-    cursor.close()
+            send_email(email, name, is_todo=False)
 
-    access_token = create_access_token(identity=str(user[0]), expires_delta=datetime.timedelta(days=1))
-    return jsonify({
-        'token': access_token,
-        'user': {'id': user[0], 'name': user[1], 'email': user[2]}
-    })
+        cursor.close()
+
+        access_token = create_access_token(identity=str(user[0]), expires_delta=datetime.timedelta(days=1))
+        return jsonify({
+            'token': access_token,
+            'user': {'id': user[0], 'name': user[1], 'email': user[2]}
+        })
+
+    except Exception as e:
+        print("❌ MySQL error during Google login:", str(e))
+        return jsonify({'error': 'Internal server error during Google login'}), 500

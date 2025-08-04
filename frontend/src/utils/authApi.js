@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const authApi = axios.create({
-  baseURL: 'http://localhost:5000/api/auth',
+  baseURL: 'https://mytodo-q9zx.onrender.com/api/auth',
 });
 
 authApi.interceptors.request.use((config) => {
